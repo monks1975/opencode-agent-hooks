@@ -1,0 +1,29 @@
+{
+  "name": "@monks1975/opencode-agent-hooks",
+  "version": "1.0.0",
+  "description": "OpenCode plugin that runs Claude Code and Codex hook configs unmodified",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "files": [
+    "src/index.ts"
+  ],
+  "scripts": {
+    "test": "node --test src/index.test.ts"
+  },
+  "devDependencies": {
+    "@opencode-ai/plugin": "^1.17.12"
+  },
+  "keywords": [
+    "opencode",
+    "opencode-plugin",
+    "claude-code",
+    "codex",
+    "hooks"
+  ],
+  "author": "Jonathan Hart",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/monks1975/opencode-agent-hooks.git"
+  },
+  "license": "MIT"
+}
