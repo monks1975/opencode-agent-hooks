@@ -40,13 +40,13 @@ function makeProject(claudeHooks?: AnyRecord, opencodeHooks?: AnyRecord, codexHo
   return dir
 }
 
-async function boot(dir: string) {
+async function boot(dir: string, worktree?: string) {
   const prompts: AnyRecord[] = []
   const client = {
     app: { log: async () => {} },
     session: { prompt: async (p: AnyRecord) => { prompts.push(p) } },
   }
-  const hooks = (await server({ directory: dir, worktree: undefined, client } as any)) as AnyRecord
+  const hooks = (await server({ directory: dir, worktree, client } as any)) as AnyRecord
   return { hooks, prompts }
 }
 
@@ -227,6 +227,14 @@ test("SessionStart skips subagent (child) sessions", async () => {
   const output = { message: {}, parts: [{ type: "text", text: "hi" }] as AnyRecord[] }
   await hooks["chat.message"]({ sessionID: "kid" }, output)
   assert.equal(output.parts.length, 1)
+})
+
+test("root worktree (opencode's global project) falls back to directory", async () => {
+  const dir = makeProject({ PreToolUse: [group([cmd("cat > pre.json")], "Bash")] })
+  const { hooks } = await boot(dir, "/")
+  await hooks["tool.execute.before"]({ tool: "bash", sessionID: "s", callID: "c" }, { args: { command: "x" } })
+  const payload = JSON.parse(readFileSync(join(dir, "pre.json"), "utf8"))
+  assert.equal(payload.cwd, dir)
 })
 
 test("Codex-only project: .codex/hooks.json is read as the fallback source", async () => {

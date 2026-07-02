@@ -2,7 +2,11 @@ import type { Plugin } from "@opencode-ai/plugin"
 import { spawn } from "node:child_process"
 import { existsSync, readFileSync } from "node:fs"
 import { homedir } from "node:os"
-import { join } from "node:path"
+import { join, parse } from "node:path"
+
+// Keep in sync with package.json; logged at boot so stale plugin caches are
+// visible in the opencode log.
+const VERSION = "1.0.1"
 
 //
 // Generic OpenCode adapter for the Claude Code hook schema.
@@ -355,13 +359,25 @@ function runCommand(
 }
 
 export const server: Plugin = async ({ directory, worktree, client }) => {
-  const projectDir = worktree ?? directory
+  // In a non-git directory opencode assigns the "global" project, whose
+  // worktree is the filesystem root — hooks config lives where the session
+  // was opened, so only trust worktree when it points at a real project.
+  const projectDir = worktree && parse(worktree).root !== worktree ? worktree : directory
   const log: Logger = (message, level = "info") =>
     client.app.log({ body: { service: "claude-hooks", level, message } }).catch(() => {})
 
   const userConfigDir = process.env.CLAUDE_CONFIG_DIR ?? join(homedir(), ".claude")
   const config = loadHookConfig(projectDir, userConfigDir, log)
   const env = { ...process.env, CLAUDE_PROJECT_DIR: projectDir }
+
+  // One line on every boot so a silent skip is distinguishable from a healthy
+  // load (opencode itself logs nothing when a plugin registers).
+  const summary = EVENTS
+    .map((event) => [event, (config[event] ?? []).flatMap((g) => g.hooks ?? []).length] as const)
+    .filter(([, count]) => count > 0)
+    .map(([event, count]) => `${count} ${event}`)
+    .join(", ")
+  log(`opencode-agent-hooks ${VERSION}: ${summary ? `loaded ${summary}` : "no hooks configured"} (project: ${projectDir})`)
 
   // toolName undefined = lifecycle event; Claude ignores matchers there.
   const matchingHooks = (event: ClaudeEvent, toolName?: string): HookCommand[] =>

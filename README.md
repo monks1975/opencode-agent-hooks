@@ -9,7 +9,7 @@ Add the plugin to a project's `opencode.json`, or to `~/.config/opencode/opencod
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["@monks1975/opencode-agent-hooks@1.0.0"]
+  "plugin": ["@monks1975/opencode-agent-hooks@1.0.1"]
 }
 ```
 
